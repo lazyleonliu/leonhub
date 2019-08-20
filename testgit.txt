@@ -1,1 +1,2 @@
-now i'm testing how to use git
+now i'm testing how to use git.
+i changed this file 
