@@ -1,0 +1,286 @@
+﻿<!DOCTYPE html>
+
+<html>
+
+<head>
+
+    <title>testD3_chp14_1.html</title>
+    <script type="text/javascript" src="../../lib/static/js/d3.v5.min.js">
+    </script>
+    <meta name="keywords" content="keyword1,keyword2,keyword3">
+    <meta name="description" content="this is my page">
+    <meta name="content-type" content="text/html; charset=GBK">
+    <!--<link rel="stylesheet" type="text/css" href="./styles.css">-->
+</head>
+
+<body>
+<div>
+    <h1>标书相似性对比结果：</h1>
+    <p id="result"></p>
+    <p id="illustrate"></p>
+    <div id="simlist"></div>
+    <hr/>
+</div>
+
+<script type="text/javascript" src="../../lib/static/js/d3.v5.min.js"></script>
+<script>
+    var width = 1000;
+    var height = 1000;
+    var svg = d3.select("body")
+        .append("svg")
+        .attr("width", width)
+        .attr("height", height);
+    var marge = {top: 10, bottom: 10, left: 10, right: 10}
+    var g = svg.append("g")
+        .attr("transform", "translate(" + marge.top + "," + marge.left + ")");
+    var resp_data = {
+        nodes:{{ resp_data.nodes|tojson }},
+        edges:{{ resp_data.edges|tojson }}
+    };
+    var nodes = resp_data.nodes;
+    var edges = resp_data.edges;
+    var highsim = [];
+    for (let i = 0; i < edges.length; i++)
+        if (edges[i].sim_text > 20) {
+            highsim.push({
+                "name1": nodes[edges[i].source].name,
+                "name2": nodes[edges[i].target].name,
+                "sim": edges[i].sim_text
+            })
+        }
+    ;
+    var h_text = ""
+    document.getElementById("result").innerHTML = "本次共对比了" + nodes.length + "份标书。";
+    if (highsim.length == 0) {
+        document.getElementById("illustrate").innerHTML = "本次对比的标书，相互之间的相似性均较低。";
+    } else {
+        document.getElementById("illustrate").innerHTML = "其中有 " + highsim.length + " 个对比结果较为相识，存在串标的可能性，分别是：";
+        for (let i = 0; i < highsim.length; i++) {
+            h_text += "<p>" + highsim[i].name1 + "和" + highsim[i].name2 + "之间的相似度为：" + highsim[i].sim + "%。";
+        }
+        document.getElementById("simlist").innerHTML = h_text;
+
+    }
+    ;
+
+    /*
+       var nodes = [//节点集
+         {name:"标书1",group:1},
+         {name:"标书1",group:1},
+         {name:"标书1",group:1},
+         {name:"标书1",group:1},
+         {name:"标书1",group:1}
+     ];
+
+     var edges = [//边集
+         {source:0,target:1,value:1/0.3},  //value控制线的长短
+         {source:0,target:2,value:1/0.02},
+         {source:0,target:3,value:1/0.01},
+         {source:0,target:4,value:1/0.01},
+         {source:1,target:2,value:1/0.03},
+         {source:1,target:3,value:1/0.07},
+         {source:1,target:4,value:1/0.04},
+         {source:2,target:3,value:1/0.4},
+         {source:2,target:4,value:1/0.25},
+         {source:3,target:4,value:1/0.15}
+
+     ];
+     */
+
+    //设置一个color的颜色比例尺
+    var colorScale = d3.scaleOrdinal()
+        .domain(d3.range(nodes.length))
+        .range(d3.schemeCategory10);
+
+    var size_list = []
+    for (let i = 0; i < nodes.length; i++) {
+        size_list.push(nodes[i].size);
+    }
+
+    //设置一个size的大小比例尺
+    var sizeScale = d3.scaleOrdinal()
+        .domain([d3.min(size_list), d3.max(size_list)])
+        .range([30, 50])
+
+    var forceSimulation = d3.forceSimulation()
+        .force("link", d3.forceLink())
+        .force("charge", d3.forceManyBody())
+        .force("center", d3.forceCenter())
+        .force("collide", d3.forceCollide());
+
+    //生成节点数据
+    forceSimulation.nodes(nodes)
+        .on("tick", ticked);//这个函数很重要，后面给出具体实现和说明
+
+    //生成边数据
+    forceSimulation.force("link")
+        .links(edges)
+        .distance(function (d) {//每一边的长度
+            return (1 / d.value) * 5;
+        })
+
+    //设置图形的中心位置
+    forceSimulation.force("center")
+        .x(width / 2)
+        .y(height / 2);
+
+    //设置点相互之间的排斥力
+    forceSimulation.force("charge")
+        .strength(-100);
+
+    //设置点与点之间的不重叠
+    forceSimulation.force("collide")
+        .radius(function (d, i) {
+            return sizeScale(d.size);
+        })
+
+    //在浏览器的控制台输出
+    console.log(nodes);
+    console.log(edges);
+    {#console.log(message);#}
+
+    //绘制边
+    /*
+    var links = g.append("g")
+
+        .selectAll("line")
+
+        .data(edges)
+
+        .enter()
+
+        .append("line")
+
+        .attr("stroke",function(d,i){
+
+            return colorScale(d.value);   //边的颜色
+
+            //return "#ccc";
+
+        })
+
+        .attr("stroke-width",1);
+
+    //边上文字
+
+    var linksText = g.append("g")
+
+        .selectAll("text")
+
+        .data(edges)
+
+        .enter()
+
+        .append("text")
+
+        .text(function(d){
+
+            return d.relation;
+
+        })
+    */
+    //建立用来放在每个节点和对应文字的分组<g>
+
+    var gs = g.selectAll(".circleText")
+        .data(nodes)
+        .enter()
+        .append("g")
+        .attr("transform", function (d, i) {
+            var cirX = d.x;
+            var cirY = d.y;
+            return "translate(" + cirX + "," + cirY + ")";
+        })
+
+        .call(d3.drag()
+            .on("start", started)
+            .on("drag", dragged)
+            .on("end", ended)
+        );
+
+
+    //绘制节点
+    gs.append("circle")
+    // .attr("r",20)
+        .attr("r", function (d, i) {    //圆圈半径
+            return sizeScale(d.size)
+        })
+        .attr("fill", function (d, i) {
+            //return colorScale(i);
+            return colorScale(d.size);
+        })
+
+    //文字
+    gs.append("text")
+    /*.attr("x",-10)
+    .attr("y",-20)
+    .attr("dy",10)*/
+        .attr("x", -25)
+        .attr("y", -5)
+        .attr("dy", 10)
+        .text(function (d) {
+            return d.name;
+        })
+
+    function ticked() {
+        /*
+            links
+
+                .attr("x1",function(d){return d.source.x;})
+
+                .attr("y1",function(d){return d.source.y;})
+
+                .attr("x2",function(d){return d.target.x;})
+
+                .attr("y2",function(d){return d.target.y;});
+
+
+
+            linksText
+
+                .attr("x",function(d){
+
+                    return (d.source.x+d.target.x)/2;
+
+                })
+
+                .attr("y",function(d){
+
+                    return (d.source.y+d.target.y)/2;
+
+                });
+
+            */
+
+        gs
+            .attr("transform", function (d) {
+                return "translate(" + d.x + "," + d.y + ")";
+            });
+    }
+
+    //drag
+    function started(d) {
+        if (!d3.event.active) {
+            forceSimulation.alphaTarget(0.8).restart();//设置衰减系数，对节点位置移动过程的模拟，数值越高移动越快，数值范围[0，1]
+        }
+        d.fx = d.x;
+        d.fy = d.y;
+    }
+
+    function dragged(d) {
+        d.fx = d3.event.x;
+        d.fy = d3.event.y;
+    }
+
+    function ended(d) {
+        if (!d3.event.active) {
+            forceSimulation.alphaTarget(0);
+        }
+        d.fx = null;
+        d.fy = null;
+    }
+
+</script>
+
+</body>
+
+</html>

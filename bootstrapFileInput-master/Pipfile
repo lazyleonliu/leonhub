@@ -1,0 +1,28 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+
+[packages]
+requirement-txt = "*"
+click = "==7.0"
+itsdangerous = "==1.1.0"
+Flask = "==1.1.1"
+Flask-Script = "==2.0.6"
+Jinja2 = "==2.11.1"
+MarkupSafe = "==1.1.1"
+Werkzeug = "==1.0.0"
+pkg-resources = "*"
+pipfile = "==0.0.2"
+docx = "==0.2.4"
+exceptions = "*"
+python-docx = "==0.8.10"
+numpy = "==1.18.1"
+lxml = "==4.5.0"
+toml = "==0.10.0"
+Pillow = "==7.0.0"
+
+[requires]
+python_version = "3.7"
