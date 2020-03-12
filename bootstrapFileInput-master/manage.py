@@ -9,7 +9,7 @@ from flask_script import Server
 
 app = create_app(os.getenv('FLASK_CONFIG') or 'default')
 manager = Manager(app=app)
-manager.add_command( "runserver", Server(host='0.0.0.0', port=5000, use_debugger=True, use_reloader=True))
+manager.add_command( "runserver", Server(host='127.0.0.1', port=5000, use_debugger=True, use_reloader=True))
 
 
 def make_shell_context():

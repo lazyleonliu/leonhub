@@ -5,6 +5,8 @@ import re
 from simialrity import SaveJson
 import numpy
 from flask import g, render_template, request, current_app, redirect, url_for
+import ConDoc
+
 
 # 断句
 def get_sentence_set(doc_text):
@@ -15,23 +17,27 @@ def get_sentence_set(doc_text):
 		sentence_set_list.append(set(s_list))
 	return sentence_set_list
 
+
 # 获取文档的名称和内容
 def get_doc_names_texts(files):
+	files = ConDoc.con_doc_to_docx(files)
 	names, texts = [], []
 	for file in files:
 		doc = Document(file)
 		names.append(re.findall(r'[^/]+$', file)[0])
 		texts.append(''.join([par.text for par in doc.paragraphs]))
-
 	return names, texts
+
+
 
 def simi(files):
 	names, docs = get_doc_names_texts(files)
 	sentences_set_list = get_sentence_set(docs)
-	common_set = sentences_set_list[0]
-	for item in sentences_set_list:
-		common_set = common_set & item
-	sentences_set_list = [item - common_set for item in sentences_set_list]
+	if len(sentences_set_list) > 2:
+		common_set = sentences_set_list[0]
+		for item in sentences_set_list:
+			common_set = common_set & item
+		sentences_set_list = [item - common_set for item in sentences_set_list]
 
 	# 计算显示的时候点的size 的大小
 
@@ -51,7 +57,10 @@ def simi(files):
 				edges = {"source": i, "target": j, "value": sim,
 						 "sim_text": round(len(com_set) / len(unit_set) * 100, 2)}
 				edges_list.append(edges)
+
 	resp_data = {}
 	resp_data['edges'] = edges_list
 	resp_data['nodes'] = nodes_list
 	return resp_data
+
+
